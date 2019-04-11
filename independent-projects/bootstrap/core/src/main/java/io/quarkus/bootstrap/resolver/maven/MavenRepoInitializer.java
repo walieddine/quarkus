@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -38,6 +37,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.Proxy;
@@ -59,6 +59,9 @@ import io.quarkus.bootstrap.util.PropertyUtils;
  * @author Alexey Loubyansky
  */
 public class MavenRepoInitializer {
+
+    private static final String DEFAULT_REMOTE_REPO_ID = "central";
+    private static final String DEFAULT_REMOTE_REPO_URL = "https://repo.maven.apache.org/maven2";
 
     private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
     private static final String DOT_M2 = ".m2";
@@ -206,8 +209,11 @@ public class MavenRepoInitializer {
                 addProfileRepos(profilesMap.get(profileName), remotes);
             }
         }
-        if(remotes.isEmpty()) {
-            remotes.add(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build());
+        if (remotes.isEmpty() || !includesDefaultRepo(remotes)) {
+            remotes.add(new RemoteRepository.Builder(DEFAULT_REMOTE_REPO_ID, "default", DEFAULT_REMOTE_REPO_URL)
+                    .setReleasePolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
+                    .setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
+                    .build());
         }
         return remotes;
     }
@@ -218,13 +224,11 @@ public class MavenRepoInitializer {
             final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(), repo.getUrl());
             org.apache.maven.settings.RepositoryPolicy policy = repo.getReleases();
             if (policy != null) {
-                repoBuilder.setReleasePolicy(
-                        new RepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(), policy.getChecksumPolicy()));
+                repoBuilder.setReleasePolicy(toAetherRepoPolicy(policy));
             }
             policy = repo.getSnapshots();
             if (policy != null) {
-                repoBuilder.setSnapshotPolicy(
-                        new RepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(), policy.getChecksumPolicy()));
+                repoBuilder.setSnapshotPolicy(toAetherRepoPolicy(policy));
             }
             all.add(repoBuilder.build());
         }
@@ -288,5 +292,24 @@ public class MavenRepoInitializer {
 
     private static String getDefaultLocalRepo() {
         return new File(userMavenConfigurationHome, "repository").getAbsolutePath();
+    }
+
+    private static boolean includesDefaultRepo(List<RemoteRepository> repositories) {
+        for (ArtifactRepository repository : repositories) {
+            if(repository.getId().equals(DEFAULT_REMOTE_REPO_ID)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static RepositoryPolicy toAetherRepoPolicy(org.apache.maven.settings.RepositoryPolicy settingsPolicy) {
+        return new RepositoryPolicy(settingsPolicy.isEnabled(),
+                isEmpty(settingsPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY : settingsPolicy.getUpdatePolicy(),
+                        isEmpty(settingsPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN : settingsPolicy.getChecksumPolicy());
+    }
+
+    private static boolean isEmpty(String str) {
+        return str == null || str.isEmpty();
     }
 }

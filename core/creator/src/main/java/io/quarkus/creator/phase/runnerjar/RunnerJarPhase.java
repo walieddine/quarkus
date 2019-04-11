@@ -77,10 +77,14 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/MANIFEST.MF",
             "module-info.class",
             "META-INF/LICENSE",
-            "META-INF/NOTICE",
             "META-INF/LICENSE.txt",
+            "META-INF/LICENSE.md",
+            "META-INF/NOTICE",
             "META-INF/NOTICE.txt",
+            "META-INF/NOTICE.md",
             "META-INF/README",
+            "META-INF/README.txt",
+            "META-INF/README.md",
             "META-INF/DEPENDENCIES",
             "META-INF/beans.xml",
             "META-INF/quarkus-config-roots.list",
@@ -321,8 +325,9 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         });
 
         copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs, services);
-        if (Files.exists(augmentOutcome.getConfigDir()))
+        if (Files.exists(augmentOutcome.getConfigDir())) {
             copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
+        }
         copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs, services);
 
         generateManifest(runnerZipFs, classPath.toString());
@@ -352,6 +357,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             try (InputStream is = Files.newInputStream(manifestPath)) {
                 manifest.read(is);
             }
+            Files.delete(manifestPath);
         }
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");

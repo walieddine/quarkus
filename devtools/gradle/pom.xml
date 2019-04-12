@@ -79,13 +79,14 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-compile-dependencies</id>
+                        <id>copy-dependencies</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <inherited>false</inherited>
                         <configuration>
+                            <useBaseVersion>true</useBaseVersion>
                             <addParentPoms>true</addParentPoms>
                             <copyPom>true</copyPom>
                             <useRepositoryLayout>true</useRepositoryLayout>
@@ -141,6 +142,25 @@
                                 </resource>
                             </resources>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/copy.xml</descriptor>
+                    </descriptors>
+                    <attach>false</attach>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>create-repo</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

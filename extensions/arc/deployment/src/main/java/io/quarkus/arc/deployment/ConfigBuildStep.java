@@ -9,24 +9,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigDeploymentTemplate;
+import io.quarkus.arc.runtime.QuarkusConfigProducer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.smallrye.config.inject.ConfigProducer;
 
 /**
  * MicroProfile Config related build steps.
@@ -37,7 +33,7 @@ public class ConfigBuildStep {
 
     @BuildStep
     AdditionalBeanBuildItem bean() {
-        return new AdditionalBeanBuildItem(ConfigProducer.class);
+        return new AdditionalBeanBuildItem(QuarkusConfigProducer.class);
     }
 
     @BuildStep
@@ -116,29 +112,9 @@ public class ConfigBuildStep {
         });
     }
 
-    /**
-     * Uses {@link AnnotationsTransformer} to automatically add {@code @Inject} to all fields that have {@code @ConfigProperty}
-     * on them, but are missing
-     * {@code @Inject}.
-     *
-     * @author Matej Novotny
-     */
     @BuildStep
-    void annotationTransformer(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(AnnotationTarget.Kind kind) {
-                return kind == AnnotationTarget.Kind.FIELD;
-            }
-
-            @Override
-            public void transform(TransformationContext transformationContext) {
-                if (transformationContext.getTarget().asField().hasAnnotation(CONFIG_PROPERTY_NAME)
-                        && !transformationContext.getTarget().asField().hasAnnotation(DotNames.INJECT)) {
-                    transformationContext.transform().add(Inject.class).done();
-                }
-            }
-        }));
+    AutoInjectAnnotationBuildItem autoInjectConfigProperty() {
+        return new AutoInjectAnnotationBuildItem(CONFIG_PROPERTY_NAME);
     }
 
     @BuildStep

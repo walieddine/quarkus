@@ -52,6 +52,7 @@
 
         <!-- REST services -->
         <module>resteasy-common</module>
+        <module>resteasy-server-common</module>
         <module>resteasy</module>
         <module>resteasy-jsonb</module>
         <module>smallrye-rest-client</module>
@@ -82,6 +83,7 @@
         <!-- Security -->
         <module>elytron-security</module>
         <module>smallrye-jwt</module>
+        <module>keycloak</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
@@ -91,6 +93,7 @@
 
         <!-- Integrations -->
         <module>amazon-lambda</module>
+        <module>amazon-lambda-resteasy</module>
 
         <!-- Camel -->
         <module>camel</module>

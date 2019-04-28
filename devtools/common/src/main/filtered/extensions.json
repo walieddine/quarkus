@@ -157,12 +157,30 @@
     "artifactId": "quarkus-jsonp"
   },
   {
+    "name": "Keycloak",
+    "labels": [
+      "keycloak",
+      "oauth2",
+      "openid-connect"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-keycloak"
+  },
+  {
     "name": "Kotlin",
     "labels": [
       "kotlin"
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-kotlin"
+  },
+  {
+    "name": "Kubernetes",
+    "labels": [
+      "kubernetes"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kubernetes"
   },
   {
     "name": "AWS Lambda",

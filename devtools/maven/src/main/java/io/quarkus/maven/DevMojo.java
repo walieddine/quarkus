@@ -44,9 +44,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
-import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -75,8 +72,10 @@ import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
- * The dev mojo, that runs a quarkus app in a forked process
+ * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
+ * automatically reflected in your running application.
  * <p>
+ * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
@@ -166,18 +165,8 @@ public class DevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
-        boolean found = false;
-        for (Plugin i : project.getBuildPlugins()) {
-            if (i.getGroupId().equals(MojoUtils.getPluginGroupId())
-                    && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
-                for (PluginExecution p : i.getExecutions()) {
-                    if (p.getGoals().contains("build")) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
+        boolean found = MojoUtils.checkProjectForMavenBuildPlugin(project);
+
         if (!found) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                     "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
@@ -247,8 +236,7 @@ public class DevMojo extends AbstractMojo {
 
             final AppModel appModel;
             try {
-                final LocalProject localProject = LocalProject
-                        .resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(outputDirectory.toPath()));
+                final LocalProject localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                 //we need to establish a partial ordering of the projects (i.e. 'reactor build order')
 
                 List<AppArtifactKey> orderedProjects = new ArrayList<>();
@@ -307,16 +295,19 @@ public class DevMojo extends AbstractMojo {
                     if (Files.isDirectory(resourcesSourcesDir)) {
                         resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
                     }
-                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(sourcePath, classesPath, resourcePath);
+                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(i.getArtifactId(), sourcePath,
+                            classesPath, resourcePath);
                     devModeContext.getModules().add(moduleInfo);
                 }
 
-                String resources = null;
-                for (Resource i : project.getBuild().getResources()) {
-                    //todo: support multiple resources dirs for config hot deployment
-                    resources = i.getDirectory();
-                    break;
-                }
+                /*
+                 * TODO: support multiple resources dirs for config hot deployment
+                 * String resources = null;
+                 * for (Resource i : project.getBuild().getResources()) {
+                 * resources = i.getDirectory();
+                 * break;
+                 * }
+                 */
 
                 appModel = new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)
@@ -324,6 +315,7 @@ public class DevMojo extends AbstractMojo {
                         .setRemoteRepositories(repos)
                         .setWorkspace(localProject.getWorkspace())
                         .build())
+                                .setDevMode(true)
                                 .resolveModel(localProject.getAppArtifact());
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to resolve Quarkus application model", e);
@@ -422,10 +414,6 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
-    }
-
-    private static void addProperty(List<String> args, String name, Object value) {
-        args.add("-D" + name + "=" + value);
     }
 
     /**

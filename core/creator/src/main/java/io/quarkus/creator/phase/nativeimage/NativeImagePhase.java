@@ -87,6 +87,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private boolean enableIsolates;
 
+    private boolean enableFallbackImages;
+
     private String graalvmHome;
 
     private boolean enableServer;
@@ -99,7 +101,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc14";
+    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc15";
 
     private String containerRuntime = "";
 
@@ -172,6 +174,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     public NativeImagePhase setEnableIsolates(boolean enableIsolates) {
         this.enableIsolates = enableIsolates;
+        return this;
+    }
+
+    public NativeImagePhase setEnableFallbackImages(boolean enableFallbackImages) {
+        this.enableFallbackImages = enableFallbackImages;
         return this;
     }
 
@@ -396,6 +403,14 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             command.add(runnerJarName);
             //https://github.com/oracle/graal/issues/660
             command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
+            if (enableFallbackImages) {
+                command.add("-H:FallbackThreshold=5");
+            } else {
+                //Default: be strict as those fallback images aren't very useful
+                //and tend to cover up real problems.
+                command.add("-H:FallbackThreshold=0");
+            }
+
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
             }
@@ -506,10 +521,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC14");
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM RC15");
             return true;
         }
         return false;
@@ -524,11 +539,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
             ProcessBuilder idPB = new ProcessBuilder().command("id", option);
             idPB.redirectError(new File("/dev/null"));
-            idPB.redirectOutput(new File("/dev/null"));
+            idPB.redirectInput(new File("/dev/null"));
 
             process = idPB.start();
             try (InputStream inputStream = process.getInputStream()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                     while ((line = reader.readLine()) != null) {
                         responseBuilder.append(line);
                     }
@@ -632,6 +647,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                         break;
                     case "enable-isolates":
                         t.setEnableIsolates(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-fallback-images":
+                        t.setEnableFallbackImages(Boolean.parseBoolean(value));
                         break;
                     case "graalvm-home":
                         t.setGraalvmHome(value);

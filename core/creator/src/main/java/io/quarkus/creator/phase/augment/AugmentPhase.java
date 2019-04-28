@@ -38,7 +38,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
-import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -49,6 +48,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.builder.BuildResult;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
@@ -287,11 +287,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             if (!bytecodeTransformerBuildItems.isEmpty()) {
                 final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(
                         bytecodeTransformerBuildItems.size());
-                if (!bytecodeTransformerBuildItems.isEmpty()) {
-                    for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
-                        bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
-                                .add(i.getVisitorFunction());
-                    }
+                for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
+                    bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
+                            .add(i.getVisitorFunction());
                 }
 
                 // now copy all the contents to the runner jar
@@ -309,7 +307,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                 return;
                             }
                             final String pathName = appClassesDir.relativize(path).toString();
-                            if (!pathName.endsWith(".class") || bytecodeTransformers.isEmpty()) {
+                            if (!pathName.endsWith(".class")) {
                                 return;
                             }
                             final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');

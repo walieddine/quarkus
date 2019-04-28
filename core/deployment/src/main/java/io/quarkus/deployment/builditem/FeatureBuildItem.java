@@ -2,7 +2,7 @@ package io.quarkus.deployment.builditem;
 
 import java.util.Objects;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Describes a functionality provided by an extension. The info is displayed to users.
@@ -26,6 +26,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
     public static final String JDBC_MSSQL = "jdbc-mssql";
+    public static final String KEYCLOAK = "keycloak";
     public static final String KOTLIN = "kotlin";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String RESTEASY = "resteasy";

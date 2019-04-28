@@ -36,6 +36,7 @@ import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.MatrixParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -63,6 +64,9 @@ public class TestResource {
     @Inject
     ExternalService service;
 
+    @Inject
+    ServiceWithConfig config;
+
     private final AtomicInteger count = new AtomicInteger(0);
 
     @GET
@@ -74,6 +78,18 @@ public class TestResource {
     @Path("/service")
     public String service() {
         return service.service();
+    }
+
+    @GET
+    @Path("/config/host")
+    public String configPort() {
+        return config.host();
+    }
+
+    @GET
+    @Path("/config/message")
+    public String configMessage() {
+        return config.message();
     }
 
     @GET
@@ -284,6 +300,12 @@ public class TestResource {
             @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
             @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
             @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
+    }
+
+    @POST
+    @Path("/gzip")
+    public String gzip(byte[] message) {
+        return "gzipped:" + new String(message);
     }
 
     @XmlRootElement

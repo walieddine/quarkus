@@ -19,6 +19,9 @@ package io.quarkus.it.main;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 
+import java.io.ByteArrayOutputStream;
+import java.util.zip.GZIPOutputStream;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -36,6 +39,16 @@ public class JaxRSTestCase {
     @Test
     public void testInteger() {
         RestAssured.when().get("/test/int/10").then().body(is("11"));
+    }
+
+    @Test
+    public void testConfigInjectionOfPort() {
+        RestAssured.when().get("/test/config/host").then().body(is("0.0.0.0"));
+    }
+
+    @Test
+    public void testConfigInjectionOfMessage() {
+        RestAssured.when().get("/test/config/message").then().body(is("A message"));
     }
 
     @Test
@@ -171,5 +184,20 @@ public class JaxRSTestCase {
     public void testOpenApiResponseWithNoContent() {
         RestAssured.when().get("/test/openapi/no-content/api-response").then()
                 .body(isEmptyString());
+    }
+
+    @Test
+    public void testGzipConfig() throws Exception {
+        //gzip.maxInput set to 10 and expects 413 status code
+        ByteArrayOutputStream obj = new ByteArrayOutputStream(12);
+        GZIPOutputStream gzip = new GZIPOutputStream(obj);
+        gzip.write("1234567890AB".getBytes("UTF-8"));
+        gzip.close();
+        RestAssured.given()
+                .header("Content-Encoding", "gzip")
+                .body(obj.toByteArray())
+                .post("/test/gzip")
+                .then().statusCode(413);
+        obj.close();
     }
 }

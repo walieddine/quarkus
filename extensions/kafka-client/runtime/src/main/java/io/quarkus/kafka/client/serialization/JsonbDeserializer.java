@@ -9,15 +9,23 @@ import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 
 import org.apache.kafka.common.serialization.Deserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Deserializer} that deserializes JSON using JSON-B.
  */
 public class JsonbDeserializer<T> implements Deserializer<T> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(JsonbDeserializer.class);
+
     private final Jsonb jsonb;
-    private final Class<T> type;
+    private Class<T> type;
     private final boolean jsonbNeedsClosing;
+
+    public JsonbDeserializer() {
+        this(null);
+    }
 
     public JsonbDeserializer(Class<T> type) {
         this(type, JsonbBuilder.create(), true);
@@ -35,10 +43,24 @@ public class JsonbDeserializer<T> implements Deserializer<T> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
+        String key = isKey ? "key.classname" : "value.classname";
+        String classname = (String) configs.get(key);
+        if (classname != null) {
+            try {
+                type = (Class<T>) Thread.currentThread().getContextClassLoader().loadClass(classname);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException("Unable to load the class " + classname);
+            }
+        }
     }
 
     @Override
     public T deserialize(String topic, byte[] data) {
+        if (type == null) {
+            LOGGER.error("Cannot deserialize the record, the classname has not be set. You need to configure the" +
+                    " `[key|value].classname` attribute");
+            return null;
+        }
         if (data == null) {
             return null;
         }

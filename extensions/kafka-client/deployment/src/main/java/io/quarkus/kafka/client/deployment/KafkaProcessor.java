@@ -4,6 +4,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.zip.Checksum;
 
+import io.quarkus.kafka.client.serialization.JsonDeserializer;
+import io.quarkus.kafka.client.serialization.JsonSerializer;
+import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
@@ -56,6 +60,8 @@ public class KafkaProcessor {
             ByteBufferSerializer.class,
             StringSerializer.class,
             FloatSerializer.class,
+            JsonbSerializer.class,
+            JsonSerializer.class,
 
             //deserializers
             ShortDeserializer.class,
@@ -67,6 +73,8 @@ public class KafkaProcessor {
             ByteBufferDeserializer.class,
             StringDeserializer.class,
             FloatDeserializer.class,
+            JsonbDeserializer.class,
+            JsonDeserializer.class
     };
     static final String TARGET_JAVA_9_CHECKSUM_FACTORY = "io.quarkus.kafka.client.generated.Target_Java9ChecksumFactory";
 

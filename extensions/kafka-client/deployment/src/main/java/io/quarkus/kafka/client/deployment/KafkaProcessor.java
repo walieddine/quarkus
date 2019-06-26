@@ -4,10 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.zip.Checksum;
 
-import io.quarkus.kafka.client.serialization.JsonDeserializer;
-import io.quarkus.kafka.client.serialization.JsonSerializer;
-import io.quarkus.kafka.client.serialization.JsonbDeserializer;
-import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
@@ -46,6 +42,10 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.kafka.client.serialization.JsonDeserializer;
+import io.quarkus.kafka.client.serialization.JsonSerializer;
+import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+import io.quarkus.kafka.client.serialization.JsonbSerializer;
 
 public class KafkaProcessor {
 
